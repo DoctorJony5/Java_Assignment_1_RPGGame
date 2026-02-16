@@ -1,0 +1,7 @@
+Debugging | Score: 85205 | Lv 56 | Exp: 0 | Kills: 0 | Seed: 0 | 2026-01-10 16:50
+Testing 1 | Score: 70863 | Lv 44 | Exp: 5331 | Kills: 35 | Seed: 0 | 2026-01-14 16:43
+Testing 1 | Score: 58958 | Lv 43 | Exp: 360 | Kills: 34 | Seed: 0 | 2026-01-14 16:38
+Bob | Score: 6868 | Lv 2 | Exp: 53 | Kills: 5 | Seed: -1139271764086700942 | 2026-01-14 17:13
+Bob | Score: 1206 | Lv 2 | Exp: 27 | Kills: 1 | Seed: 0 | 2026-01-14 16:57
+Testing 1 | Score: 586 | Lv 17 | Exp: 50 | Kills: 4 | Seed: 0 | 2026-01-14 16:01
+Bob | Score: 294 | Lv 1 | Exp: 0 | Kills: 0 | Seed: 0 | 2026-01-14 16:54
