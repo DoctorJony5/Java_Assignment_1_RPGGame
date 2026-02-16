@@ -1,5 +1,5 @@
 package app;
-
+// word
 import game.Game;
 
 /**
