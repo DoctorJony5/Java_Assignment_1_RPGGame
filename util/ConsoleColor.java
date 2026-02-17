@@ -2,6 +2,7 @@ package util;
 
 /**
  * ANSI color codes for console output.
+ * Not all of these even get used or can work in all consoles (Windows doesn't accept ANSI by default)
  */
 public class ConsoleColor {
     private ConsoleColor() {

@@ -150,45 +150,55 @@ public class Monster {
         // All monsters get basic attack
         abilities.add(MonsterAbility.createBasicAttack());
 
-        // Uncommon and above get one special ability
-        if (rarity.ordinal() >= Rarity.UNCOMMON.ordinal()) {
+        // Uncommon monsters get one special ability based on element
+        if (rarity == Rarity.UNCOMMON) {
             switch (type) {
-                case FIRE -> abilities.add(MonsterAbility.createEnrage());
-                case WATER -> abilities.add(MonsterAbility.createLifeDrain());
-                case EARTH -> abilities.add(MonsterAbility.createDefensiveStance());
-                case AIR -> abilities.add(MonsterAbility.createRapidStrike());
-                case DARK -> abilities.add(MonsterAbility.createBleedAttack());
-                case LIGHT -> abilities.add(MonsterAbility.createHeavyStrike());
-                case MAGIC -> abilities.add(MonsterAbility.createStunningBlow());
+                case FIRE -> abilities.add(MonsterAbility.createArcaneBurst());
+                case WATER -> abilities.add(MonsterAbility.createCounterStance());
+                case EARTH -> abilities.add(MonsterAbility.createStoneCrash());
+                case AIR -> abilities.add(MonsterAbility.createPiercingFlurry());
+                case DARK -> abilities.add(MonsterAbility.createShadowLash());
+                case LIGHT -> abilities.add(MonsterAbility.createSpellCast());
+                case MAGIC -> abilities.add(MonsterAbility.createArcaneBurst());
                 default -> abilities.add(MonsterAbility.createHeavyStrike());
             }
         }
 
-        // Rare and above get second ability
-        if (rarity.ordinal() >= Rarity.RARE.ordinal()) {
+        // Rare monsters get element ability + heavy strike + one tactical ability
+        if (rarity == Rarity.RARE) {
+            // Element-based ability
+            switch (type) {
+                case FIRE -> abilities.add(MonsterAbility.createArcaneBurst());
+                case WATER -> abilities.add(MonsterAbility.createLifeDrain());
+                case EARTH -> abilities.add(MonsterAbility.createStoneCrash());
+                case AIR -> abilities.add(MonsterAbility.createMultiStrike());
+                case DARK -> abilities.add(MonsterAbility.createVenomSpray());
+                case LIGHT -> abilities.add(MonsterAbility.createSpellCast());
+                case MAGIC -> abilities.add(MonsterAbility.createArcaneBurst());
+                default -> abilities.add(MonsterAbility.createHeavyStrike());
+            }
+            // Additional tactical ability
+            int roll = rng.nextInt(4);
+            switch (roll) {
+                case 0 -> abilities.add(MonsterAbility.createStunningBlow());
+                case 1 -> abilities.add(MonsterAbility.createDefensiveStance());
+                case 2 -> abilities.add(MonsterAbility.createCounterStance());
+                case 3 -> abilities.add(MonsterAbility.createHeavyStrike());
+            }
+        }
+
+        // Legendary/Mythical bosses get full arsenal with telegraphing
+        if (rarity.ordinal() >= Rarity.LEGENDARY.ordinal()) {
             abilities.add(MonsterAbility.createHeavyStrike());
-        }
-
-        // Bosses get third ability with telegraphing
-        if (rarity == Rarity.LEGENDARY) {
+            abilities.add(MonsterAbility.createMultiStrike());
             abilities.add(MonsterAbility.createBossTelegraph("Devastating Strike"));
+            abilities.add(MonsterAbility.createEnrage());
+            abilities.add(MonsterAbility.createCounterStance());
         }
 
-        // The concept of this system was to easily allow new abilities to be added
-        // At first I had planned that the monsters themselves would have built in
-        // abilities or etc, but that proved painful
-        // This system isn't much better, but it is a little more modular, if
-        // underbaked.
-        // Arguably, the comabt system as a whole is underbaked / terribly designed
-        // I have no real idea how to make things "fun" or "engaging"
-        // If I had wanted to redesign this, I'd have to rethink everything
-
-        // One of the earlier prototypes was a card-based combat system, which I thought
-        // was more fun, but time constraints.
-        // Another prototype had actual like movement, spells or actions with AoE,
-        // ranged attacks, etc. This was super ambitious and complicated. No code
-        // remains of it, even if it was designed in this file.
-
+        // UPDATED: Uncommon/Rare monsters now have more tactical variety
+        // This makes fights more interesting and less "just tank and deal damage"
+        // Different monsters have different tactics which the player must adapt to
     }
 
     /**
@@ -266,6 +276,18 @@ public class Monster {
             }
         }
 
+        // Counter stance when threatened but not critical
+        if (health < maxHealth * 0.5) {
+            for (int i = 0; i < available.size(); i++) {
+                MonsterAbility ability = available.get(i);
+                if (ability.getType() == MonsterAbility.AbilityType.COUNTER_STANCE) {
+                    if (rng.nextInt(100) < 50) {
+                        return ability;
+                    }
+                }
+            }
+        }
+
         // Try to stun player when possible
         // 40% chance to use stun ability when available (not 100%, to keep it
         // unpredictable)
@@ -276,6 +298,28 @@ public class Monster {
             if (ability.getType() == MonsterAbility.AbilityType.STUNNING_BLOW) {
                 if (rng.nextInt(100) < 40) { // todo: balance - should this be higher on harder difficulties?
                     return ability;
+                }
+            }
+        }
+
+        // Spell casts: useful mid-fight burst
+        for (int i = 0; i < available.size(); i++) {
+            MonsterAbility ability = available.get(i);
+            if (ability.getType() == MonsterAbility.AbilityType.SPELL_CAST) {
+                if (rng.nextInt(100) < 35) {
+                    return ability;
+                }
+            }
+        }
+
+        // Multi-strike: pressure the player when healthy
+        if (health > maxHealth * 0.4) {
+            for (int i = 0; i < available.size(); i++) {
+                MonsterAbility ability = available.get(i);
+                if (ability.getType() == MonsterAbility.AbilityType.MULTI_STRIKE) {
+                    if (rng.nextInt(100) < 35) {
+                        return ability;
+                    }
                 }
             }
         }

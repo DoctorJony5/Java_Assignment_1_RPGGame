@@ -28,7 +28,10 @@ public class MonsterAbility {
         DEFENSIVE_STANCE,
         ENRAGE, // Poor idea
         SUMMON_ADDS, // To implement sometime for Necromancer Boss
-        BOSS_TELEGRAPH // To rework
+        BOSS_TELEGRAPH, // To rework
+        COUNTER_STANCE, // NEW: Reflect damage back
+        SPELL_CAST, // NEW: Magical damage type
+        MULTI_STRIKE // NEW: Hit twice per turn
     }
 
     public MonsterAbility(String name, String description, AbilityType type, int staminaCost, int minDamage,
@@ -167,5 +170,48 @@ public class MonsterAbility {
     public static MonsterAbility createBossTelegraph(String moveName) {
         return new MonsterAbility(moveName, "Charges up a devastating attack",
                 AbilityType.BOSS_TELEGRAPH, 30, 40, 60, 4);
+    }
+
+    public static MonsterAbility createCounterStance() {
+        // Reflects some damage back to attacker - tactical defensive move
+        return new MonsterAbility("Counter Stance", "Prepares to reflect incoming damage",
+                AbilityType.COUNTER_STANCE, 18, 0, 0, 3);
+    }
+
+    public static MonsterAbility createSpellCast() {
+        // Magical damage - harder to mitigate with armor
+        return new MonsterAbility("Arcane Bolt", "Casts magical energy at target",
+                AbilityType.SPELL_CAST, 22, 20, 32, 2);
+    }
+
+    public static MonsterAbility createMultiStrike() {
+        // Hits twice - lower individual damage but higher total
+        return new MonsterAbility("Twin Strike", "Attacks with two quick strikes",
+                AbilityType.MULTI_STRIKE, 28, 12, 18, 3);
+    }
+
+    public static MonsterAbility createStoneCrash() {
+        return new MonsterAbility("Stone Crash", "A crushing slam from above",
+                AbilityType.HEAVY_STRIKE, 24, 20, 34, 2);
+    }
+
+    public static MonsterAbility createVenomSpray() {
+        return new MonsterAbility("Venom Spray", "Sprays corrosive venom",
+                AbilityType.POISON_ATTACK, 22, 10, 18, 3);
+    }
+
+    public static MonsterAbility createShadowLash() {
+        return new MonsterAbility("Shadow Lash", "Cuts with a shadowy whip",
+                AbilityType.BLEED_ATTACK, 22, 12, 20, 3);
+    }
+
+    public static MonsterAbility createArcaneBurst() {
+        return new MonsterAbility("Arcane Burst", "Unleashes volatile magic",
+                AbilityType.SPELL_CAST, 24, 22, 36, 3);
+    }
+
+    public static MonsterAbility createPiercingFlurry() {
+        return new MonsterAbility("Piercing Flurry", "A rapid series of strikes",
+                AbilityType.RAPID_STRIKE, 22, 8, 16, 2);
     }
 }

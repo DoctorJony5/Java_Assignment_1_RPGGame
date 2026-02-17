@@ -1,0 +1,115 @@
+[22:10:44.649] [INFO] [LOGGER] Log file created: game_log_20260216_221044.log
+[22:10:44.653] [INFO] [DEBUG] Debug mode enabled
+[22:10:54.100] [DEBUG] [MENU] User selected: 3
+[22:11:13.175] [DEBUG] [MENU] User selected: 1
+[22:11:13.175] [INFO] [GAME] Starting new game
+[22:11:20.731] [DEBUG] [GAME] Player name input: Jonathan
+[22:11:20.735] [INFO] [GAME] Player created: Jonathan
+[22:11:33.253] [INFO] [GAME] Difficulty set to: Normal
+[22:11:35.948] [INFO] [CUTSCENE] Intro cutscene completed for player: Jonathan
+[22:11:35.949] [INFO] [GAMELOOP] Entering game loop
+[22:11:35.949] [INFO] [GAMELOOP] Generating floor 1
+[22:11:35.952] [DEBUG] [LORE] Initialized 10 lore items
+[22:11:35.957] [DEBUG] [GAMELOOP] Floor generated successfully
+[22:11:35.957] [INFO] [GAMELOOP] Floor validated, starting exploration
+[22:11:35.957] [INFO] [EXPLORE] Starting floor exploration
+[22:11:37.624] [DEBUG] [EXPLORE] Player command: e
+[22:11:37.813] [DEBUG] [EXPLORE] Player command: e
+[22:11:37.814] [INFO] [INTERACT] Player found 35 gold
+[22:11:38.007] [DEBUG] [EXPLORE] Player command: e
+[22:11:38.007] [INFO] [INTERACT] Player found 66 gold
+[22:11:38.195] [DEBUG] [EXPLORE] Player command: e
+[22:11:38.196] [INFO] [INTERACT] Player found potion: Stamina Potion
+[22:11:38.383] [DEBUG] [EXPLORE] Player command: e
+[22:11:38.585] [DEBUG] [EXPLORE] Player command: e
+[22:11:38.585] [INFO] [INTERACT] Player revealed nearby rooms
+[22:11:38.780] [DEBUG] [EXPLORE] Player command: e
+[22:11:38.781] [INFO] [INTERACT] Player found potion: Stamina Potion
+[22:11:38.965] [DEBUG] [EXPLORE] Player command: e
+[22:11:39.136] [DEBUG] [EXPLORE] Player command: e
+[22:11:39.327] [DEBUG] [EXPLORE] Player command: e
+[22:11:39.568] [DEBUG] [EXPLORE] Player command: e
+[22:11:39.858] [DEBUG] [EXPLORE] Player command: e
+[22:11:39.859] [INFO] [INTERACT] Player found potion: Stamina Potion
+[22:11:40.117] [DEBUG] [EXPLORE] Player command: e
+[22:11:40.117] [INFO] [INTERACT] Player found potion: Stamina Potion
+[22:11:40.340] [DEBUG] [EXPLORE] Player command: e
+[22:11:40.340] [INFO] [INTERACT] Player found potion: Stamina Potion
+[22:11:40.550] [DEBUG] [EXPLORE] Player command: e
+[22:11:40.749] [DEBUG] [EXPLORE] Player command: e
+[22:11:40.749] [INFO] [INTERACT] Player found potion: Health Potion
+[22:11:40.963] [DEBUG] [EXPLORE] Player command: e
+[22:11:40.963] [INFO] [INTERACT] Player found potion: Health Potion
+[22:11:41.182] [DEBUG] [EXPLORE] Player command: e
+[22:11:41.182] [INFO] [INTERACT] Player found potion: Health Potion
+[22:11:41.386] [DEBUG] [EXPLORE] Player command: e
+[22:11:41.595] [DEBUG] [EXPLORE] Player command: e
+[22:11:41.595] [INFO] [INTERACT] Player found potion: Stamina Potion
+[22:11:41.972] [DEBUG] [EXPLORE] Player command: d
+[22:11:41.973] [INFO] [TREASURE] Player entered treasure room
+[22:11:41.974] [INFO] [TREASURE] Lore item collected: Bronze Plaque
+[22:11:41.975] [INFO] [TREASURE] Starting room treasure: weapon, armor, and potion
+[22:11:41.975] [INFO] [TREASURE] Treasure collected: 53 gold
+[22:11:42.642] [DEBUG] [EXPLORE] Player command: d
+[22:11:43.361] [DEBUG] [EXPLORE] Player command: e
+[22:11:43.361] [INFO] [INTERACT] Player found potion: Stamina Potion
+[22:11:43.603] [DEBUG] [EXPLORE] Player command: e
+[22:11:43.603] [INFO] [INTERACT] Player found 51 gold
+[22:11:43.812] [DEBUG] [EXPLORE] Player command: e
+[22:11:43.812] [INFO] [INTERACT] Player found 20 gold
+[22:11:44.013] [DEBUG] [EXPLORE] Player command: e
+[22:11:44.206] [DEBUG] [EXPLORE] Player command: e
+[22:11:44.206] [INFO] [INTERACT] Player found 38 gold
+[22:11:44.417] [DEBUG] [EXPLORE] Player command: e
+[22:11:44.626] [DEBUG] [EXPLORE] Player command: e
+[22:11:44.837] [DEBUG] [EXPLORE] Player command: e
+[22:11:44.837] [INFO] [INTERACT] Player revealed nearby rooms
+[22:11:45.042] [DEBUG] [EXPLORE] Player command: e
+[22:11:45.042] [INFO] [INTERACT] Player found 56 gold
+[22:11:45.239] [DEBUG] [EXPLORE] Player command: e
+[22:11:45.448] [DEBUG] [EXPLORE] Player command: e
+[22:11:45.648] [DEBUG] [EXPLORE] Player command: e
+[22:11:45.862] [DEBUG] [EXPLORE] Player command: e
+[22:11:45.863] [INFO] [INTERACT] Player found 64 gold
+[22:11:46.070] [DEBUG] [EXPLORE] Player command: e
+[22:11:46.070] [INFO] [INTERACT] Player found potion: Stamina Potion
+[22:11:46.624] [DEBUG] [EXPLORE] Player command: w
+[22:11:46.901] [DEBUG] [EXPLORE] Player command: w
+[22:11:47.438] [DEBUG] [EXPLORE] Player command: d
+[22:11:47.717] [DEBUG] [EXPLORE] Player command: w
+[22:11:47.954] [DEBUG] [EXPLORE] Player command: w
+[22:11:48.515] [DEBUG] [EXPLORE] Player command: d
+[22:11:48.745] [DEBUG] [EXPLORE] Player command: d
+[22:11:48.959] [DEBUG] [EXPLORE] Player command: d
+[22:11:49.168] [DEBUG] [EXPLORE] Player command: d
+[22:11:49.384] [DEBUG] [EXPLORE] Player command: d
+[22:11:49.596] [DEBUG] [EXPLORE] Player command: d
+[22:11:49.807] [DEBUG] [EXPLORE] Player command: d
+[22:11:50.047] [DEBUG] [EXPLORE] Player command: d
+[22:11:50.047] [DEBUG] [BOSS] Triggering boss encounter
+[22:11:50.048] [INFO] [COMBAT] Starting encounter with 1 enemies
+[22:11:51.117] [DEBUG] [COMBAT] Initialized player abilities. Count: 3 (Level 1)
+[22:11:51.121] [DEBUG] [COMBAT] CombatSystem initialized: Jonathan vs Hydra (Boss) | Heal cap: 60
+[22:11:51.121] [INFO] [COMBAT] Combat starting
+[22:11:53.366] [DEBUG] [COMBAT] First turn: Monster
+[22:11:53.366] [DEBUG] [COMBAT] === Turn 1 ===
+[22:11:53.366] [DEBUG] [COMBAT] Monster's turn
+[22:11:54.776] [DEBUG] [COMBAT] === Turn 2 ===
+[22:11:54.777] [DEBUG] [COMBAT] Player's turn
+[22:11:56.432] [DEBUG] [COMBAT] Player input: 1
+[22:11:56.432] [DEBUG] [COMBAT] Player chose ability: Slash
+[22:11:57.315] [DEBUG] [COMBAT] === Turn 3 ===
+[22:11:57.316] [DEBUG] [COMBAT] Monster's turn
+[22:12:00.876] [DEBUG] [COMBAT] === Turn 4 ===
+[22:12:00.876] [DEBUG] [COMBAT] Player's turn
+[22:12:02.451] [DEBUG] [COMBAT] Player input: h
+[22:12:03.857] [DEBUG] [COMBAT] === Turn 5 ===
+[22:12:03.857] [DEBUG] [COMBAT] Monster's turn
+[22:12:06.299] [INFO] [COMBAT] Combat ending
+[22:12:06.299] [WARN] [COMBAT] Player defeated
+[22:12:06.299] [WARN] [COMBAT] Player died in combat
+[22:12:06.299] [INFO] [EXPLORE] Floor exploration complete
+[22:12:06.299] [DEBUG] [GAMELOOP] Floor exploration complete
+[22:12:06.299] [INFO] [GAMELOOP] Game loop ended
+[22:12:07.112] [INFO] [GAME] Game stopped
+[22:12:07.112] [INFO] [LOGGER] Closing log file

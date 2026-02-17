@@ -37,6 +37,7 @@ public class CombatSystem {
     private int monsterBleedTurns; // Monster version of bleed
     private int monsterPoisonTurns; // Monster version of poison
     private int playerParryBlock; // Parry ability effect: blocks the next attack and counters
+    private int monsterCounterTurns; // Counter stance: reflects damage back to player
 
     private static final int BLEED_DAMAGE = 5; // Damage per turn from bleeding
     private static final int POISON_DAMAGE = 3; // Damage per turn from poison
@@ -59,8 +60,8 @@ public class CombatSystem {
         this.rng = new RNG();
         this.logger = Logger.getInstance();
         this.comboCount = 0;
-        // Prevention of potion abuse.
-        this.combatHealingCap = (int) (player.getMaxHealth() * 0.75);
+        // Prevention of potion abuse. Reduced from 0.75 to 0.60 for harder combat
+        this.combatHealingCap = (int) (player.getMaxHealth() * 0.60);
         // FLEE SYSTEM DISABLED
         // this.playerFled = false;
         // this.monsterFled = false;
@@ -99,7 +100,7 @@ public class CombatSystem {
         }
 
         if (player.getLevel() >= 15) {
-            playerAbilities.add(new Ability("Focus", "Next attack deals 50% more damage", 12, 0, 0, true));
+            playerAbilities.add(new Ability("Focus", "Next attack deals 25% more damage", 20, 0, 0, true));
         }
 
         if (player.getLevel() >= 20) {
@@ -460,7 +461,8 @@ public class CombatSystem {
         }
 
         Item potion = player.getInventory().get(index);
-        // NEW POTION SYSTEM: Calculate HoT values based on player stats
+        // TODO: Revamp hoiw potions work
+        // This also means reworking all the abilities (ideally with the rework to the combat system.TO
         int[] hotValues = potion.getPotionHoTValues(player.getIntelligence(), player.getLevel(), player.getLuck());
         int initialHeal = hotValues[0];
         int hotTotal = hotValues[1];
@@ -662,29 +664,29 @@ public class CombatSystem {
             // for big hits
             int damage = (int) ((ability.calculateDamage(rng) + player.getStrength()) * weaponSpeed);
 
-            // Apply Focus buff if active (50% damage increase)
-            // BALANCED: Reduced from 50% to 35% to prevent focus-spam one-shots
-            // This is still strong but doesn't trivialize fights as much
+            // Apply Focus buff if active (25% damage increase with higher stamina cost)
+            // BALANCED: Reduced from 50% to 25% and increased stamina cost from 12 to 20
+            // This prevents focus-spam one-shots while maintaining tactical importance
             // Focus is consumed after being applied, so you only get one high-damage hit
             // per Focus cast
             if (playerFocused) {
-                int focusBonus = (int) (damage * 0.35); // Reduced from 0.50
+                int focusBonus = (int) (damage * 0.25); // Reduced from 0.50 → 0.35 → 0.25
                 damage += focusBonus;
                 actionResult = ConsoleColor.BRIGHT_YELLOW + "✦ FOCUSED STRIKE! +" + focusBonus + " damage! ";
                 playerFocused = false; // Consume the focus buff
             }
 
             // Combo scaling (builds up with consecutive attacks)
-            // BALANCED: Reduced from 3x to 2x per count to prevent exponential combos
-            // Each attack adds to combo count, scaling damage by 2 points per count
-            // Example: 5 consecutive attacks = 15 combo count = 30 bonus damage (was 45)
-            // This still rewards attacking repeatedly but less dramatically
-            int comboBonus = comboCount * 2; // Reduced from 3
+            // BALANCED: Reduced from 2x to 1x per count to prevent exponential combos
+            // Each attack adds to combo count, scaling damage by 1 point per count
+            // Example: 5 consecutive attacks = 15 combo count = 15 bonus damage (was 30)
+            // This rewards attacking repeatedly but prevents one-shot potential
+            int comboBonus = comboCount * 1; // Reduced from 2
             if (ability.getName().contains("Combo")) {
                 // Combo Finisher consumes the entire combo streak for massive damage
-                // BALANCED: Reduced finisher bonus from 5x to 3x
-                // At 5 combo: base 10 damage + finisher 15 = 25 total (instead of 55)
-                comboBonus += comboCount * 3; // Reduced from 5
+                // BALANCED: Reduced finisher bonus from 5x to 2x
+                // At 5 combo: base 10 damage + finisher 10 = 20 total (instead of 55)
+                comboBonus += comboCount * 2; // Reduced from 3
                 comboCount = 0;
             }
             damage += comboBonus;
@@ -809,6 +811,13 @@ public class CombatSystem {
                 }
             }
 
+            // Apply defensive stance reduction before damage breakdown
+            if (monster.isDefending()) {
+                damage = (int) (damage * 0.75);
+                monster.setDefending(false);
+                actionResult += ConsoleColor.BRIGHT_CYAN + " [DEFENDED]" + ConsoleColor.RESET;
+            }
+
             // Get damage breakdown BEFORE applying damage
             int[] breakdown = monster.getDamageBreakdown(damage);
             int baseDamage = breakdown[0];
@@ -843,6 +852,14 @@ public class CombatSystem {
             if (comboBonus > 0) {
                 comboText = ConsoleColor.BRIGHT_YELLOW + " (COMBO x" + (1 + comboCount / 3) + " +" + comboBonus + ")"
                         + ConsoleColor.RESET;
+            }
+
+            // Counter stance reflection
+            if (monsterCounterTurns > 0) {
+                int reflected = Math.max(1, (int) (actualDamage * 0.25));
+                player.takeDamage(reflected);
+                monsterCounterTurns--;
+                actionResult += ConsoleColor.BRIGHT_RED + " [COUNTER -" + reflected + " HP]" + ConsoleColor.RESET;
             }
 
             actionResult += ConsoleColor.BRIGHT_GREEN + "➤ " + player.getName() + " dealt " + ConsoleColor.BRIGHT_WHITE
@@ -1034,10 +1051,43 @@ public class CombatSystem {
                                 + " took a defensive stance!" + ConsoleColor.RESET;
                         break;
 
+                        case COUNTER_STANCE:
+                        monster.setDefending(true);
+                        monsterCounterTurns = 2;
+                        actionResult = ConsoleColor.BRIGHT_CYAN + "➤ " + monster.getName()
+                            + " prepared to counter your attacks!" + ConsoleColor.RESET;
+                        break;
+
                     case ENRAGE:
                         monster.setEnraged(true);
                         actionResult = ConsoleColor.BRIGHT_RED + "➤ " + monster.getName()
                                 + " entered a berserker rage!" + ConsoleColor.RESET;
+                        break;
+
+                        case SPELL_CAST:
+                        int spellArmor = Math.max(0, player.getArmorValue() / 2);
+                        int spellMitigated = Math.max(1, damage - spellArmor);
+                        int spellPercentReduced = spellArmor > 0 ? (int) ((spellArmor * 100.0) / damage) : 0;
+                        player.takeDamage(spellMitigated);
+                        actionResult = ConsoleColor.BRIGHT_MAGENTA + "➤ " + monster.getName()
+                            + " cast " + chosenAbility.getName() + " for " + ConsoleColor.BRIGHT_WHITE + damage
+                            + ConsoleColor.BRIGHT_MAGENTA + " damage! " + ConsoleColor.BRIGHT_YELLOW
+                            + "(-" + spellPercentReduced + "% armor = " + spellMitigated + " taken)"
+                            + ConsoleColor.RESET;
+                        break;
+
+                        case MULTI_STRIKE:
+                        int hit1 = damage;
+                        int hit2 = (int) (damage * 0.8);
+                        int armor = player.getArmorValue();
+                        int hit1Mitigated = Math.max(1, hit1 - armor);
+                        int hit2Mitigated = Math.max(1, hit2 - armor);
+                        player.takeDamage(hit1Mitigated + hit2Mitigated);
+                        actionResult = ConsoleColor.BRIGHT_RED + "➤ " + monster.getName()
+                            + " used " + chosenAbility.getName() + " for two hits! "
+                            + ConsoleColor.BRIGHT_WHITE + (hit1 + hit2) + ConsoleColor.BRIGHT_RED
+                            + " total damage (" + hit1Mitigated + " + " + hit2Mitigated + " taken)"
+                            + ConsoleColor.RESET;
                         break;
 
                     case BOSS_TELEGRAPH:

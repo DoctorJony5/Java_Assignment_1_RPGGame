@@ -49,6 +49,13 @@ public class DynArray<T> {
         return (T) items[index];
     }
 
+    public void set(int index, T item) {
+        if (index < 0 || index >= size) {
+            throw new IndexOutOfBoundsException("Index: " + index + ", Size: " + size);
+        }
+        items[index] = item;
+    }
+
     @SuppressWarnings("unchecked")
     public T remove(int index) {
         if (index < 0 || index >= size) {

@@ -3,6 +3,12 @@ package util;
 /**
  * ASCII art and display formatting utilities.
  * All methods return strings instead of printing directly (MVC pattern).
+ * 
+ * TODO:
+ * - Add more complex art (monsters, items, etc.)
+ * - Add color support (using ANSI codes) for different text types (titles, errors, etc.)
+ * - Add methods for building more complex UI elements (menus, status screens, etc.)
+ * 
  */
 public class AsciiArt {
     private AsciiArt() {

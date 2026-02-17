@@ -2,6 +2,9 @@ package util;
 
 /**
  * Custom random number generator without using java.util.Random.
+ * How this works: It uses an LCG algorithm to generate pseudo-random numbers based on a seed value (gotten from System.nanoTime() by default). 
+ * The nextInt, nextDouble, etc. methods produce random values based on the current seed and then update the seed for the next call.
+ * This allows for reproducible randomness if you use the same seed, which can be useful for testing or certain game mechanics.
  */
 public class RNG {
     private long seed;

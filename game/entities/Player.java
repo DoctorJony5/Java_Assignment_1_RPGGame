@@ -84,6 +84,7 @@ public class Player {
 
     private int floorReached; // Highest floor number reached (used to track progress)
     private long totalScore; // Running score (increases with floor progression and combat success)
+    private int gold; // Currency for trading with NPCs and shops
 
     // Constructor for the player upon new game creation
     public Player(String name) {
@@ -933,6 +934,23 @@ public class Player {
         this.alive = false;
         this.health = 0;
     } // Kill the player
+
+    // ===== GOLD SYSTEM (for NPC trading) =====
+    public int getGold() {
+        return gold;
+    }
+
+    public void addGold(int amount) {
+        this.gold = Math.max(0, gold + amount);
+    }
+
+    public void subtractGold(int amount) {
+        this.gold = Math.max(0, gold - amount);
+    }
+
+    public void setGold(int amount) {
+        this.gold = Math.max(0, amount);
+    }
 
     @Override
     public String toString() {

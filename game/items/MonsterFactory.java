@@ -161,10 +161,75 @@ public class MonsterFactory {
             "Puzzle Guardian", ElementType.MAGIC, ElementType.DARK, Rarity.RARE,
             "An ancient sentinel that punishes those who fail its tests.", 1.0, 1.3); // Balanced challenger
 
+    // NEW MONSTER TEMPLATES - adds more variety to encounters
+    public static final MonsterTemplate BANDIT = new MonsterTemplate(
+            "Bandit", ElementType.DARK, ElementType.LIGHT, Rarity.COMMON,
+            "A criminal outlaw who relies on speed and cunning.", 1.5, 0.95); // Very fast, weak
+
+    public static final MonsterTemplate GARGOYLE = new MonsterTemplate(
+            "Gargoyle", ElementType.EARTH, ElementType.WATER, Rarity.UNCOMMON,
+            "A stone creature that can reflect incoming damage.", 0.6, 1.3); // Slow, defensive, strong
+
+    public static final MonsterTemplate SHADOW_BEAST = new MonsterTemplate(
+            "Shadow Beast", ElementType.DARK, ElementType.LIGHT, Rarity.UNCOMMON,
+            "A creature born from darkness itself, quick and aggressive.", 1.6, 1.2); // Very fast and strong
+
+    public static final MonsterTemplate NECROMANCER = new MonsterTemplate(
+            "Necromancer", ElementType.DARK, ElementType.LIGHT, Rarity.RARE,
+            "A death-wielding mage who commands the power of the undead.", 1.1, 1.4); // Tactical caster
+
+    public static final MonsterTemplate DRAGON = new MonsterTemplate(
+            "Dragon", ElementType.FIRE, ElementType.WATER, Rarity.LEGENDARY,
+            "An ancient archwyrm with scales harder than steel and breath of flame.", 1.0, 1.7); // Ultimate threat
+
+        public static final MonsterTemplate CULTIST = new MonsterTemplate(
+            "Cultist", ElementType.MAGIC, ElementType.LIGHT, Rarity.COMMON,
+            "A zealous fanatic empowered by dark rites.", 1.1, 1.0); // Balanced
+
+        public static final MonsterTemplate SLIME = new MonsterTemplate(
+            "Slime", ElementType.WATER, ElementType.FIRE, Rarity.COMMON,
+            "A gelatinous creature that splits and reforms.", 0.9, 0.9); // Slow but steady
+
+        public static final MonsterTemplate SCORPION = new MonsterTemplate(
+            "Scorpion", ElementType.EARTH, ElementType.WATER, Rarity.COMMON,
+            "A venomous predator with a deadly stinger.", 1.2, 1.0); // Fast and balanced
+
+        public static final MonsterTemplate WRAITH = new MonsterTemplate(
+            "Wraith", ElementType.DARK, ElementType.LIGHT, Rarity.UNCOMMON,
+            "A spectral assassin that drains warmth from the living.", 1.5, 1.1); // Fast and evasive
+
+        public static final MonsterTemplate STONE_BEETLE = new MonsterTemplate(
+            "Stone Beetle", ElementType.EARTH, ElementType.FIRE, Rarity.UNCOMMON,
+            "A plated insect that shrugs off blows.", 0.7, 1.2); // Defensive bruiser
+
+        public static final MonsterTemplate STORM_DRAKE = new MonsterTemplate(
+            "Storm Drake", ElementType.AIR, ElementType.EARTH, Rarity.UNCOMMON,
+            "A lesser drake crackling with storm energy.", 1.4, 1.2); // Fast and strong
+
+        public static final MonsterTemplate VAMPIRE = new MonsterTemplate(
+            "Vampire", ElementType.DARK, ElementType.LIGHT, Rarity.RARE,
+            "A noble predator that thrives on blood.", 1.2, 1.4); // Life drain specialist
+
+        public static final MonsterTemplate BASILISK = new MonsterTemplate(
+            "Basilisk", ElementType.EARTH, ElementType.FIRE, Rarity.RARE,
+            "A stone-gazing reptile with crushing strength.", 0.9, 1.6); // Heavy hitter
+
+        public static final MonsterTemplate CHRONOMANCER = new MonsterTemplate(
+            "Chronomancer", ElementType.MAGIC, ElementType.DARK, Rarity.RARE,
+            "A time-bending mage that warps the flow of battle.", 1.3, 1.1); // Tactical caster
+
+        public static final MonsterTemplate PHOENIX = new MonsterTemplate(
+            "Phoenix", ElementType.FIRE, ElementType.WATER, Rarity.LEGENDARY,
+            "A legendary bird reborn in flame.", 1.2, 1.6); // Fast boss
+
     // Pools
-    private static final MonsterTemplate[] COMMON_TEMPLATES = { GOBLIN, RAT, SPIDER, SKELETON };
-    private static final MonsterTemplate[] UNCOMMON_TEMPLATES = { TROLL, WEREWOLF, ZOMBIE };
-    private static final MonsterTemplate[] BOSS_TEMPLATES = { MINOTAUR, LICH, HYDRA, WARLOCK };
+        private static final MonsterTemplate[] COMMON_TEMPLATES = { GOBLIN, RAT, SPIDER, SKELETON, BANDIT, CULTIST, SLIME,
+            SCORPION };
+        private static final MonsterTemplate[] UNCOMMON_TEMPLATES = { TROLL, WEREWOLF, ZOMBIE, GARGOYLE, SHADOW_BEAST,
+            WRAITH, STONE_BEETLE, STORM_DRAKE };
+        private static final MonsterTemplate[] RARE_TEMPLATES = { MIMIC, TREASURE_GUARDIAN, PUZZLE_GUARDIAN, NECROMANCER,
+            VAMPIRE, BASILISK, CHRONOMANCER };
+        private static final MonsterTemplate[] BOSS_TEMPLATES = { MINOTAUR, LICH, HYDRA, WARLOCK, DRAGON, PHOENIX };
 
     // Level scaling logic; calculate maximum allowable monster level; prevents
     // over-scaling. Ideally
@@ -232,9 +297,18 @@ public class MonsterFactory {
      */
     public static Monster createEncounterMonster(int level, boolean elite, Difficulty difficulty, RNG rng) {
         // Select template based on difficulty and floor progression
-        MonsterTemplate[] pool = (level > 5 && difficulty.ordinal() >= Difficulty.NORMAL.ordinal())
-            ? UNCOMMON_TEMPLATES
-            : COMMON_TEMPLATES;
+        MonsterTemplate[] pool = COMMON_TEMPLATES;
+        int roll = rng.nextInt(100);
+
+        if (level >= 10 && difficulty.ordinal() >= Difficulty.NORMAL.ordinal()) {
+            if (roll < 25) {
+                pool = RARE_TEMPLATES;
+            } else {
+                pool = UNCOMMON_TEMPLATES;
+            }
+        } else if (level > 5 && difficulty.ordinal() >= Difficulty.NORMAL.ordinal()) {
+            pool = UNCOMMON_TEMPLATES;
+        }
 
         if (pool.length == 0) {
             throw new IllegalStateException("No monster templates available for encounters");
@@ -358,6 +432,8 @@ public class MonsterFactory {
         for (MonsterTemplate t : COMMON_TEMPLATES)
             templates.add(t);
         for (MonsterTemplate t : UNCOMMON_TEMPLATES)
+            templates.add(t);
+        for (MonsterTemplate t : RARE_TEMPLATES)
             templates.add(t);
         for (MonsterTemplate t : BOSS_TEMPLATES)
             templates.add(t);
