@@ -1,4 +1,3 @@
-// Jonathan Decondé - 3196362
 package game.ui;
 
 import util.ConsoleColor;

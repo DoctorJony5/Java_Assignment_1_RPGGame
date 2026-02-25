@@ -1,6 +1,7 @@
 // Jonathan Decondé - 3196362
 package game;
 
+import game.entities.Companion;
 import game.entities.Player;
 import game.entities.monsters.Monster;
 import game.items.Item;
@@ -225,6 +226,8 @@ public class Game {
             name = validatePlayerName(name);
 
             this.player = new Player(name);
+            player.addCompanion(new Companion("Aerin", Companion.Role.ROGUE, ElementType.AIR, player.getLevel()));
+            player.addCompanion(new Companion("Lyra", Companion.Role.HEALER, ElementType.LIGHT, player.getLevel()));
             this.currentFloorNumber = 1;
             this.debugSystem = new DebugCommandSystem(player, view, settings.debugMode);
             logger.info("GAME", "Player created: " + name);

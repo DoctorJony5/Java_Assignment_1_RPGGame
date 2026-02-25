@@ -60,6 +60,7 @@ public class Monster {
     private MonsterAbility nextTelegraphedAbility; // For boss telegraphing
     private boolean isEnraged;
     private boolean isDefending;
+    private boolean counterStanceActive;
 
     public Monster(String name, ElementType type, ElementType weakness, Rarity rarity, int level) {
         this.name = name;
@@ -74,6 +75,7 @@ public class Monster {
         this.nextTelegraphedAbility = null;
         this.isEnraged = false;
         this.isDefending = false;
+        this.counterStanceActive = false;
         initializeAbilities();
     }
 
@@ -153,13 +155,13 @@ public class Monster {
         // Uncommon monsters get one special ability based on element
         if (rarity == Rarity.UNCOMMON) {
             switch (type) {
-                case FIRE -> abilities.add(MonsterAbility.createArcaneBurst());
+                case FIRE -> abilities.add(MonsterAbility.createEnrage());
                 case WATER -> abilities.add(MonsterAbility.createCounterStance());
-                case EARTH -> abilities.add(MonsterAbility.createStoneCrash());
-                case AIR -> abilities.add(MonsterAbility.createPiercingFlurry());
-                case DARK -> abilities.add(MonsterAbility.createShadowLash());
+                case EARTH -> abilities.add(MonsterAbility.createDefensiveStance());
+                case AIR -> abilities.add(MonsterAbility.createMultiStrike());
+                case DARK -> abilities.add(MonsterAbility.createBleedAttack());
                 case LIGHT -> abilities.add(MonsterAbility.createSpellCast());
-                case MAGIC -> abilities.add(MonsterAbility.createArcaneBurst());
+                case MAGIC -> abilities.add(MonsterAbility.createStunningBlow());
                 default -> abilities.add(MonsterAbility.createHeavyStrike());
             }
         }
@@ -168,32 +170,32 @@ public class Monster {
         if (rarity == Rarity.RARE) {
             // Element-based ability
             switch (type) {
-                case FIRE -> abilities.add(MonsterAbility.createArcaneBurst());
+                case FIRE -> abilities.add(MonsterAbility.createEnrage());
                 case WATER -> abilities.add(MonsterAbility.createLifeDrain());
-                case EARTH -> abilities.add(MonsterAbility.createStoneCrash());
-                case AIR -> abilities.add(MonsterAbility.createMultiStrike());
-                case DARK -> abilities.add(MonsterAbility.createVenomSpray());
-                case LIGHT -> abilities.add(MonsterAbility.createSpellCast());
-                case MAGIC -> abilities.add(MonsterAbility.createArcaneBurst());
+                case EARTH -> abilities.add(MonsterAbility.createDefensiveStance());
+                case AIR -> abilities.add(MonsterAbility.createRapidStrike());
+                case DARK -> abilities.add(MonsterAbility.createPoisonAttack());
+                case LIGHT -> abilities.add(MonsterAbility.createHeavyStrike());
+                case MAGIC -> abilities.add(MonsterAbility.createSpellCast());
                 default -> abilities.add(MonsterAbility.createHeavyStrike());
             }
             // Additional tactical ability
-            int roll = rng.nextInt(4);
-            switch (roll) {
-                case 0 -> abilities.add(MonsterAbility.createStunningBlow());
-                case 1 -> abilities.add(MonsterAbility.createDefensiveStance());
-                case 2 -> abilities.add(MonsterAbility.createCounterStance());
-                case 3 -> abilities.add(MonsterAbility.createHeavyStrike());
-            }
+            abilities.add(MonsterAbility.createHeavyStrike());
         }
 
         // Legendary/Mythical bosses get full arsenal with telegraphing
         if (rarity.ordinal() >= Rarity.LEGENDARY.ordinal()) {
             abilities.add(MonsterAbility.createHeavyStrike());
             abilities.add(MonsterAbility.createMultiStrike());
+            abilities.add(MonsterAbility.createSpellCast());
+            abilities.add(MonsterAbility.createCounterStance());
             abilities.add(MonsterAbility.createBossTelegraph("Devastating Strike"));
             abilities.add(MonsterAbility.createEnrage());
-            abilities.add(MonsterAbility.createCounterStance());
+        }
+
+        // Mythical gets one extra tactical slot to feel truly different
+        if (rarity == Rarity.MYTHICAL) {
+            abilities.add(MonsterAbility.createLifeDrain());
         }
 
         // UPDATED: Uncommon/Rare monsters now have more tactical variety
@@ -251,6 +253,32 @@ public class Monster {
             return abilities.get(0); // Basic attack
         }
 
+        boolean casterArchetype = isCasterArchetype();
+        boolean bruiserArchetype = isBruiserArchetype();
+        boolean skirmisherArchetype = isSkirmisherArchetype();
+
+        // Caster monsters strongly prefer spell attacks while healthy
+        if (casterArchetype && health > maxHealth * 0.45) {
+            for (int i = 0; i < available.size(); i++) {
+                MonsterAbility ability = available.get(i);
+                if (ability.getType() == MonsterAbility.AbilityType.SPELL_CAST && rng.nextInt(100) < 70) {
+                    return ability;
+                }
+            }
+        }
+
+        // Skirmishers favor multi/rapid pressure early
+        if (skirmisherArchetype && health > maxHealth * 0.35) {
+            for (int i = 0; i < available.size(); i++) {
+                MonsterAbility ability = available.get(i);
+                if ((ability.getType() == MonsterAbility.AbilityType.MULTI_STRIKE
+                        || ability.getType() == MonsterAbility.AbilityType.RAPID_STRIKE)
+                        && rng.nextInt(100) < 65) {
+                    return ability;
+                }
+            }
+        }
+
         // Heal when low health - very basic AI prioritization
         // If below 40% health and a healing ability exists, use it immediately
         // This makes monsters less passive and increases fight duration/difficulty
@@ -273,17 +301,8 @@ public class Monster {
                 if (ability.getType() == MonsterAbility.AbilityType.DEFENSIVE_STANCE) {
                     return ability;
                 }
-            }
-        }
-
-        // Counter stance when threatened but not critical
-        if (health < maxHealth * 0.5) {
-            for (int i = 0; i < available.size(); i++) {
-                MonsterAbility ability = available.get(i);
                 if (ability.getType() == MonsterAbility.AbilityType.COUNTER_STANCE) {
-                    if (rng.nextInt(100) < 50) {
-                        return ability;
-                    }
+                    return ability;
                 }
             }
         }
@@ -302,34 +321,13 @@ public class Monster {
             }
         }
 
-        // Spell casts: useful mid-fight burst
-        for (int i = 0; i < available.size(); i++) {
-            MonsterAbility ability = available.get(i);
-            if (ability.getType() == MonsterAbility.AbilityType.SPELL_CAST) {
-                if (rng.nextInt(100) < 35) {
-                    return ability;
-                }
-            }
-        }
-
-        // Multi-strike: pressure the player when healthy
-        if (health > maxHealth * 0.4) {
-            for (int i = 0; i < available.size(); i++) {
-                MonsterAbility ability = available.get(i);
-                if (ability.getType() == MonsterAbility.AbilityType.MULTI_STRIKE) {
-                    if (rng.nextInt(100) < 35) {
-                        return ability;
-                    }
-                }
-            }
-        }
-
         // Proof I don't understand game design or fun
         if (available.size() > 1) {
             for (int i = 0; i < available.size(); i++) {
                 MonsterAbility ability = available.get(i);
                 if (ability.getType() == MonsterAbility.AbilityType.ENRAGE) {
-                    if (health > maxHealth * 0.5 && rng.nextInt(100) < 30) {
+                    int threshold = bruiserArchetype ? 45 : 30;
+                    if (health > maxHealth * 0.5 && rng.nextInt(100) < threshold) {
                         return ability;
                     }
                 }
@@ -386,6 +384,33 @@ public class Monster {
         for (int i = 0; i < abilities.size(); i++) {
             abilities.get(i).tickCooldown();
         }
+    }
+
+    private boolean isCasterArchetype() {
+        String lower = name.toLowerCase();
+        return type == ElementType.MAGIC
+                || lower.contains("lich")
+                || lower.contains("warlock")
+                || lower.contains("necromancer");
+    }
+
+    private boolean isBruiserArchetype() {
+        String lower = name.toLowerCase();
+        return lower.contains("troll")
+                || lower.contains("minotaur")
+                || lower.contains("hydra")
+                || lower.contains("dragon")
+                || type == ElementType.EARTH;
+    }
+
+    private boolean isSkirmisherArchetype() {
+        String lower = name.toLowerCase();
+        return lower.contains("rat")
+                || lower.contains("spider")
+                || lower.contains("bandit")
+                || lower.contains("werewolf")
+                || lower.contains("shadow")
+                || type == ElementType.AIR;
     }
 
     public int getAIAction() {
@@ -475,6 +500,10 @@ public class Monster {
         return isDefending;
     }
 
+    public boolean isCounterStanceActive() {
+        return counterStanceActive;
+    }
+
     public boolean isBoss() {
         return rarity.ordinal() >= Rarity.LEGENDARY.ordinal() || name.toLowerCase().contains("boss");
     }
@@ -486,6 +515,10 @@ public class Monster {
 
     public void setDefending(boolean defending) {
         this.isDefending = defending;
+    }
+
+    public void setCounterStanceActive(boolean counterStanceActive) {
+        this.counterStanceActive = counterStanceActive;
     }
 
     public void setSpeedMultiplier(double multiplier) {

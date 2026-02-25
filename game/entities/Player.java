@@ -68,6 +68,8 @@ public class Player {
     // initially tried weight-based system, then level-based, now just count-based
 
     private DynArray<LoreItem> loreCollection; // Story items the player has discovered
+    private DynArray<Companion> companions; // Party members for enhanced combat
+    private static final int MAX_PARTY_SIZE = 3;
 
     // Potion HoT (Heal over Time) effects - new potion system
     private int healthPotionHoTRemaining; // Remaining HP to be healed over time
@@ -116,12 +118,14 @@ public class Player {
 
         this.floorReached = 1;
         this.totalScore = 0;
+        this.gold = 100;
         this.alive = true;
         this.hasChosenToExit = false;
         this.hasTorch = false; // When debugging, set to true
 
         this.inventory = new DynArray<>(INVENTORY_LIMIT);
         this.loreCollection = new DynArray<>();
+        this.companions = new DynArray<>();
         // I am quite happy with the DynArray
     }
 
@@ -196,6 +200,32 @@ public class Player {
 
     public DynArray<Item> getInventory() {
         return inventory;
+    }
+
+    public DynArray<Companion> getCompanions() {
+        return companions;
+    }
+
+    public boolean addCompanion(Companion companion) {
+        if (companion == null || companions.size() >= MAX_PARTY_SIZE) {
+            return false;
+        }
+        companions.add(companion);
+        return true;
+    }
+
+    public void removeCompanion(Companion companion) {
+        companions.remove(companion);
+    }
+
+    public int getAliveCompanionCount() {
+        int aliveCount = 0;
+        for (int i = 0; i < companions.size(); i++) {
+            if (companions.get(i).isAlive()) {
+                aliveCount++;
+            }
+        }
+        return aliveCount;
     }
 
     public Item getEquippedWeapon() {

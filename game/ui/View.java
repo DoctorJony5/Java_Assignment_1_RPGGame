@@ -1,7 +1,7 @@
-// Jonathan Decondé - 3196362
 package game.ui;
 
 import game.GameSettings;
+import game.entities.Companion;
 import game.entities.Player;
 import game.entities.monsters.Monster;
 import util.ConsoleColor;
@@ -149,6 +149,24 @@ public class View {
                 player.getExperience(), player.getTotalScore());
         int expPadding = Math.max(0, hudWidth - expInfo.length() - 4);
         printLine("│ " + expInfo + " ".repeat(expPadding) + "  │");
+
+        if (player.getCompanions().size() > 0) {
+            String partyHeader = "Party Morale (Class | Loyalty | Cohesion):";
+            int partyHeaderPad = Math.max(0, hudWidth - partyHeader.length() - 4);
+            printLine("│ " + partyHeader + " ".repeat(partyHeaderPad) + "  │");
+
+            for (int i = 0; i < player.getCompanions().size(); i++) {
+                Companion companion = player.getCompanions().get(i);
+                String line = String.format(" - %-10s %-8s L:%-3d C:%-3d %s",
+                        companion.getName(),
+                        companion.getRole().name(),
+                        companion.getLoyalty(),
+                        companion.getCohesion(),
+                        companion.isEngaged() ? "[Ready]" : "[Disengaged]");
+                int linePad = Math.max(0, hudWidth - line.length() - 4);
+                printLine("│ " + line + " ".repeat(linePad) + "  │");
+            }
+        }
 
         String bottomBorder = "└" + "─".repeat(hudWidth) + "┘";
         printLine(ConsoleColor.BRIGHT_CYAN + bottomBorder + ConsoleColor.RESET);

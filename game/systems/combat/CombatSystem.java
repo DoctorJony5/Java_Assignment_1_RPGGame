@@ -2,6 +2,7 @@
 package game.systems.combat;
 
 import game.ItemType;
+import game.entities.Companion;
 import game.entities.Player;
 import game.entities.monsters.Monster;
 import game.entities.monsters.MonsterAbility;
@@ -30,6 +31,7 @@ public class CombatSystem {
     private Logger logger;
 
     private DynArray<Ability> playerAbilities; // List of moves the player can perform
+    private DynArray<Companion> partyMembers;
 
     // Status effects persist for a number of turns and deal damage each turn
     private int playerBleedTurns; // Bleeding: takes damage each turn (from weapon trait)
@@ -37,7 +39,6 @@ public class CombatSystem {
     private int monsterBleedTurns; // Monster version of bleed
     private int monsterPoisonTurns; // Monster version of poison
     private int playerParryBlock; // Parry ability effect: blocks the next attack and counters
-    private int monsterCounterTurns; // Counter stance: reflects damage back to player
 
     private static final int BLEED_DAMAGE = 5; // Damage per turn from bleeding
     private static final int POISON_DAMAGE = 3; // Damage per turn from poison
@@ -60,6 +61,7 @@ public class CombatSystem {
         this.rng = new RNG();
         this.logger = Logger.getInstance();
         this.comboCount = 0;
+        this.partyMembers = player.getCompanions();
         // Prevention of potion abuse. Reduced from 0.75 to 0.60 for harder combat
         this.combatHealingCap = (int) (player.getMaxHealth() * 0.60);
         // FLEE SYSTEM DISABLED
@@ -237,6 +239,8 @@ public class CombatSystem {
             // loop)
             handleFirstStrike();
 
+            showPartyReadinessReport();
+
             // Determine turn order: whoever has higher speed goes first
             // > If tied, randomly choose
             boolean playerTurn = player.getSpeed() == monster.getSpeed()
@@ -245,7 +249,7 @@ public class CombatSystem {
             logger.debug("COMBAT", "First turn: " + (playerTurn ? "Player" : "Monster"));
 
             int turnCount = 0;
-            while (player.isAlive() && monster.isAlive()) {
+            while ((player.isAlive() || hasAliveCompanion()) && monster.isAlive()) {
                 turnCount++;
                 logger.debug("COMBAT", "=== Turn " + turnCount + " ===");
 
@@ -257,14 +261,20 @@ public class CombatSystem {
 
                 view.clear();
 
-                if (playerTurn) {
+                if (!player.isAlive() && hasAliveCompanion()) {
+                    playerTurn = true;
+                }
+
+                if (playerTurn && player.isAlive()) {
                     playerTurn();
+                } else if (playerTurn) {
+                    executeCompanionPhase();
                 } else {
                     monsterTurn();
                 }
 
-                // Check if combat should end after this turn (monster fled, died, etc.)
-                if (!player.isAlive() || !monster.isAlive()) {
+                // Check if combat should end after this turn
+                if (!monster.isAlive() || (!player.isAlive() && !hasAliveCompanion())) {
                     break;
                 }
 
@@ -433,6 +443,178 @@ public class CombatSystem {
                 validChoice = true;
             }
         }
+
+        executeCompanionPhase();
+    }
+
+    private boolean hasAliveCompanion() {
+        for (int i = 0; i < partyMembers.size(); i++) {
+            if (partyMembers.get(i).isAlive() && partyMembers.get(i).isEngaged()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private Companion getRandomAliveCompanion() {
+        DynArray<Companion> alive = new DynArray<>();
+        for (int i = 0; i < partyMembers.size(); i++) {
+            Companion companion = partyMembers.get(i);
+            if (companion.isAlive() && companion.isEngaged()) {
+                alive.add(companion);
+            }
+        }
+        if (alive.size() == 0) {
+            return null;
+        }
+        return alive.get(rng.nextInt(alive.size()));
+    }
+
+    private void executeCompanionPhase() {
+        if (!monster.isAlive() || partyMembers.size() == 0) {
+            return;
+        }
+
+        int partyAverageCohesion = getPartyAverageCohesion();
+        int monsterThreat = calculateMonsterThreat();
+
+        if (monster.isBoss() && partyAverageCohesion < 35) {
+            forcePartyDisengage("Party cohesion collapsed under boss pressure");
+        }
+
+        StringBuilder phaseLog = new StringBuilder();
+        for (int i = 0; i < partyMembers.size(); i++) {
+            Companion companion = partyMembers.get(i);
+            if (!companion.isAlive() || !monster.isAlive() || !companion.isEngaged()) {
+                continue;
+            }
+
+            if (companion.shouldDisengage(monsterThreat, monster.isBoss(), partyAverageCohesion)) {
+                companion.disengage(companion.getDisengageReason());
+                phaseLog.append("\n").append(ConsoleColor.BRIGHT_RED)
+                        .append("➤ ").append(companion.getName()).append(" disengaged: ")
+                        .append(companion.getDisengageReason())
+                        .append(ConsoleColor.RESET);
+                continue;
+            }
+
+            double playerHealthRatio = player.getHealth() / (double) Math.max(1, player.getMaxHealth());
+            Companion.CompanionAction action = companion.chooseAction(playerHealthRatio, monsterThreat);
+
+            switch (action) {
+                case RETREAT -> {
+                    companion.disengage("Loyalty/Cohesion threshold failed vs threat");
+                    phaseLog.append("\n").append(ConsoleColor.BRIGHT_RED)
+                            .append("➤ ").append(companion.getName())
+                            .append(" withdrew from combat (morale check)")
+                            .append(ConsoleColor.RESET);
+                }
+                case HEAL, SUPPORT -> {
+                    int supportHeal = companion.trySupportHeal(playerHealthRatio);
+                    if (supportHeal > 0 && player.isAlive()) {
+                        healWithCap(supportHeal);
+                        phaseLog.append("\n").append(ConsoleColor.BRIGHT_CYAN)
+                                .append("➤ ").append(companion.getName()).append(" heals/supports (+")
+                                .append(supportHeal).append(" HP)")
+                                .append(ConsoleColor.RESET);
+                    }
+                }
+                case ATTACK -> {
+                    int companionDamage = companion.performAttack(rng);
+                    if (monster.isDefending()) {
+                        companionDamage = (int) (companionDamage * 0.7);
+                        monster.setDefending(false);
+                    }
+                    if (monster.isCounterStanceActive()) {
+                        int reflected = Math.max(1, companionDamage / 4);
+                        companion.takeDamage(reflected);
+                        monster.setCounterStanceActive(false);
+                    }
+                    monster.takeDamage(companionDamage);
+                    phaseLog.append("\n").append(ConsoleColor.BRIGHT_GREEN)
+                            .append("➤ ").append(companion.getName()).append(" strikes for ")
+                            .append(companionDamage).append(" damage!")
+                            .append(ConsoleColor.RESET);
+                }
+                case HOLD -> {
+                    companion.restoreStamina(8);
+                    phaseLog.append("\n").append(ConsoleColor.BRIGHT_YELLOW)
+                            .append("➤ ").append(companion.getName()).append(" holds position and regains stamina")
+                            .append(ConsoleColor.RESET);
+                }
+            }
+        }
+
+        if (!phaseLog.isEmpty() && monster.isAlive()) {
+            view.clear();
+            view.showCombatState(player, monster, false,
+                    ConsoleColor.BRIGHT_WHITE + "Allies act!" + ConsoleColor.RESET + phaseLog);
+            view.pressAnyKey();
+        }
+    }
+
+    private int calculateMonsterThreat() {
+        return (monster.getLevel() * 10) + monster.getDamage() + (monster.getDefense() * 2);
+    }
+
+    private int getPartyAverageCohesion() {
+        if (partyMembers.size() == 0) {
+            return 100;
+        }
+        int total = 0;
+        int count = 0;
+        for (int i = 0; i < partyMembers.size(); i++) {
+            Companion companion = partyMembers.get(i);
+            if (companion.isAlive()) {
+                total += companion.getCohesion();
+                count++;
+            }
+        }
+        if (count == 0) {
+            return 0;
+        }
+        return total / count;
+    }
+
+    private void forcePartyDisengage(String reason) {
+        for (int i = 0; i < partyMembers.size(); i++) {
+            Companion companion = partyMembers.get(i);
+            if (companion.isAlive() && companion.isEngaged()) {
+                companion.disengage(reason);
+            }
+        }
+    }
+
+    private void showPartyReadinessReport() {
+        if (partyMembers.size() == 0) {
+            return;
+        }
+
+        StringBuilder report = new StringBuilder();
+        report.append(ConsoleColor.BRIGHT_WHITE).append("Party Readiness:").append(ConsoleColor.RESET);
+        int threat = calculateMonsterThreat();
+        int avgCohesion = getPartyAverageCohesion();
+        report.append("\n")
+                .append(ConsoleColor.BRIGHT_YELLOW)
+                .append("Threat Score: ").append(threat)
+                .append(" | Avg Cohesion: ").append(avgCohesion)
+                .append(ConsoleColor.RESET);
+
+        for (int i = 0; i < partyMembers.size(); i++) {
+            Companion companion = partyMembers.get(i);
+            report.append("\n").append(" - ").append(companion.getMoraleSummary());
+        }
+
+        if (monster.isBoss() && avgCohesion < 35) {
+            report.append("\n")
+                    .append(ConsoleColor.BRIGHT_RED)
+                    .append("WARNING: Cohesion too low for this boss. Companions may disengage.")
+                    .append(ConsoleColor.RESET);
+        }
+
+        view.clear();
+        view.showCombatState(player, monster, false, report.toString());
+        view.pressAnyKey();
     }
 
     private int countPotions(ItemType type) {
@@ -461,8 +643,7 @@ public class CombatSystem {
         }
 
         Item potion = player.getInventory().get(index);
-        // TODO: Revamp hoiw potions work
-        // This also means reworking all the abilities (ideally with the rework to the combat system.TO
+        // NEW POTION SYSTEM: Calculate HoT values based on player stats
         int[] hotValues = potion.getPotionHoTValues(player.getIntelligence(), player.getLevel(), player.getLuck());
         int initialHeal = hotValues[0];
         int hotTotal = hotValues[1];
@@ -811,19 +992,25 @@ public class CombatSystem {
                 }
             }
 
-            // Apply defensive stance reduction before damage breakdown
-            if (monster.isDefending()) {
-                damage = (int) (damage * 0.75);
-                monster.setDefending(false);
-                actionResult += ConsoleColor.BRIGHT_CYAN + " [DEFENDED]" + ConsoleColor.RESET;
-            }
-
             // Get damage breakdown BEFORE applying damage
             int[] breakdown = monster.getDamageBreakdown(damage);
             int baseDamage = breakdown[0];
             int actualDamage = breakdown[1];
             int defenseReduction = breakdown[2];
             int defensePercent = breakdown[3];
+
+            if (monster.isDefending()) {
+                damage = (int) (damage * 0.7);
+                monster.setDefending(false);
+            }
+
+            if (monster.isCounterStanceActive()) {
+                int reflectedDamage = Math.max(1, damage / 5);
+                player.takeDamage(reflectedDamage);
+                traitBonus += ConsoleColor.BRIGHT_RED + " [COUNTER REFLECT " + reflectedDamage + "]"
+                        + ConsoleColor.RESET;
+                monster.setCounterStanceActive(false);
+            }
 
             monster.takeDamage(damage);
 
@@ -852,14 +1039,6 @@ public class CombatSystem {
             if (comboBonus > 0) {
                 comboText = ConsoleColor.BRIGHT_YELLOW + " (COMBO x" + (1 + comboCount / 3) + " +" + comboBonus + ")"
                         + ConsoleColor.RESET;
-            }
-
-            // Counter stance reflection
-            if (monsterCounterTurns > 0) {
-                int reflected = Math.max(1, (int) (actualDamage * 0.25));
-                player.takeDamage(reflected);
-                monsterCounterTurns--;
-                actionResult += ConsoleColor.BRIGHT_RED + " [COUNTER -" + reflected + " HP]" + ConsoleColor.RESET;
             }
 
             actionResult += ConsoleColor.BRIGHT_GREEN + "➤ " + player.getName() + " dealt " + ConsoleColor.BRIGHT_WHITE
@@ -948,6 +1127,30 @@ public class CombatSystem {
             damage += bonusDamage;
             // Note: the bonus display is handled in the actionResult below
             monster.setHasFirstStrikeDamageBonus(false); // Consume the bonus
+        }
+
+        // Some monster attacks can target party members to make combat more dynamic
+        if (hasAliveCompanion()
+                && chosenAbility.getType() != MonsterAbility.AbilityType.DEFENSIVE_STANCE
+                && chosenAbility.getType() != MonsterAbility.AbilityType.COUNTER_STANCE
+                && chosenAbility.getType() != MonsterAbility.AbilityType.ENRAGE
+                && rng.nextInt(100) < 30) {
+            Companion target = getRandomAliveCompanion();
+            if (target != null) {
+                int companionDamage = Math.max(1, damage - (target.getRole() == Companion.Role.VANGUARD ? 4 : 0));
+                if (chosenAbility.getType() == MonsterAbility.AbilityType.MULTI_STRIKE) {
+                    companionDamage += Math.max(1, damage / 2);
+                }
+                target.takeDamage(companionDamage);
+                actionResult = ConsoleColor.BRIGHT_RED + "➤ " + monster.getName() + " targeted "
+                        + target.getName() + " for " + companionDamage + " damage!" + ConsoleColor.RESET;
+                view.clear();
+                view.showCombatState(player, monster, true, actionResult,
+                        comboCount, playerFocused, playerBleedTurns, playerPoisonTurns,
+                        monsterBleedTurns, monsterPoisonTurns);
+                view.pressAnyKey();
+                return;
+            }
         }
 
         // Check if player is parrying
@@ -1053,41 +1256,34 @@ public class CombatSystem {
 
                         case COUNTER_STANCE:
                         monster.setDefending(true);
-                        monsterCounterTurns = 2;
-                        actionResult = ConsoleColor.BRIGHT_CYAN + "➤ " + monster.getName()
-                            + " prepared to counter your attacks!" + ConsoleColor.RESET;
+                        monster.setCounterStanceActive(true);
+                        actionResult = ConsoleColor.BRIGHT_MAGENTA + "➤ " + monster.getName()
+                            + " prepared a counter stance!" + ConsoleColor.RESET;
+                        break;
+
+                        case SPELL_CAST:
+                        int spellMitigation = Math.max(0, player.getResilience() / 3);
+                        int spellDamage = Math.max(1, damage - spellMitigation);
+                        player.takeDamage(spellDamage);
+                        actionResult = ConsoleColor.BRIGHT_MAGENTA + "➤ " + monster.getName()
+                            + " cast " + chosenAbility.getName() + " for " + spellDamage
+                            + " arcane damage!" + ConsoleColor.RESET;
+                        break;
+
+                        case MULTI_STRIKE:
+                        int hitOne = Math.max(1, (damage / 2) - player.getArmorValue());
+                        int hitTwo = Math.max(1, (damage / 2) - player.getArmorValue());
+                        int total = hitOne + hitTwo;
+                        player.takeDamage(total);
+                        actionResult = ConsoleColor.BRIGHT_RED + "➤ " + monster.getName()
+                            + " used Twin Strike (" + hitOne + " + " + hitTwo + " = " + total + ")!"
+                            + ConsoleColor.RESET;
                         break;
 
                     case ENRAGE:
                         monster.setEnraged(true);
                         actionResult = ConsoleColor.BRIGHT_RED + "➤ " + monster.getName()
                                 + " entered a berserker rage!" + ConsoleColor.RESET;
-                        break;
-
-                        case SPELL_CAST:
-                        int spellArmor = Math.max(0, player.getArmorValue() / 2);
-                        int spellMitigated = Math.max(1, damage - spellArmor);
-                        int spellPercentReduced = spellArmor > 0 ? (int) ((spellArmor * 100.0) / damage) : 0;
-                        player.takeDamage(spellMitigated);
-                        actionResult = ConsoleColor.BRIGHT_MAGENTA + "➤ " + monster.getName()
-                            + " cast " + chosenAbility.getName() + " for " + ConsoleColor.BRIGHT_WHITE + damage
-                            + ConsoleColor.BRIGHT_MAGENTA + " damage! " + ConsoleColor.BRIGHT_YELLOW
-                            + "(-" + spellPercentReduced + "% armor = " + spellMitigated + " taken)"
-                            + ConsoleColor.RESET;
-                        break;
-
-                        case MULTI_STRIKE:
-                        int hit1 = damage;
-                        int hit2 = (int) (damage * 0.8);
-                        int armor = player.getArmorValue();
-                        int hit1Mitigated = Math.max(1, hit1 - armor);
-                        int hit2Mitigated = Math.max(1, hit2 - armor);
-                        player.takeDamage(hit1Mitigated + hit2Mitigated);
-                        actionResult = ConsoleColor.BRIGHT_RED + "➤ " + monster.getName()
-                            + " used " + chosenAbility.getName() + " for two hits! "
-                            + ConsoleColor.BRIGHT_WHITE + (hit1 + hit2) + ConsoleColor.BRIGHT_RED
-                            + " total damage (" + hit1Mitigated + " + " + hit2Mitigated + " taken)"
-                            + ConsoleColor.RESET;
                         break;
 
                     case BOSS_TELEGRAPH:
@@ -1147,9 +1343,11 @@ public class CombatSystem {
          */
 
         if (monster.isAlive()) {
-            logger.warn("COMBAT", "Player defeated");
-            view.showError("You were defeated!");
-            player.kill();
+            if (!player.isAlive() && !hasAliveCompanion()) {
+                logger.warn("COMBAT", "Party defeated");
+                view.showError("Your party was defeated!");
+                player.kill();
+            }
         } else {
             logger.info("COMBAT", "Victory! Player gained " + monster.getExperience() + " XP");
             view.showSuccess("Victory!");

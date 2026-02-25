@@ -189,29 +189,4 @@ public class MonsterAbility {
         return new MonsterAbility("Twin Strike", "Attacks with two quick strikes",
                 AbilityType.MULTI_STRIKE, 28, 12, 18, 3);
     }
-
-    public static MonsterAbility createStoneCrash() {
-        return new MonsterAbility("Stone Crash", "A crushing slam from above",
-                AbilityType.HEAVY_STRIKE, 24, 20, 34, 2);
-    }
-
-    public static MonsterAbility createVenomSpray() {
-        return new MonsterAbility("Venom Spray", "Sprays corrosive venom",
-                AbilityType.POISON_ATTACK, 22, 10, 18, 3);
-    }
-
-    public static MonsterAbility createShadowLash() {
-        return new MonsterAbility("Shadow Lash", "Cuts with a shadowy whip",
-                AbilityType.BLEED_ATTACK, 22, 12, 20, 3);
-    }
-
-    public static MonsterAbility createArcaneBurst() {
-        return new MonsterAbility("Arcane Burst", "Unleashes volatile magic",
-                AbilityType.SPELL_CAST, 24, 22, 36, 3);
-    }
-
-    public static MonsterAbility createPiercingFlurry() {
-        return new MonsterAbility("Piercing Flurry", "A rapid series of strikes",
-                AbilityType.RAPID_STRIKE, 22, 8, 16, 2);
-    }
 }
